@@ -77,6 +77,8 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
+	PlayerInputComponent->BindAction("SingularityAttack", IE_Pressed, this, &ASCharacter::SingularityAttack);
+
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
 
@@ -131,6 +133,51 @@ void ASCharacter::PrimaryAttack()
 	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2f);
 }
 
+
+void ASCharacter::SingularityAttack()
+{
+	PlayAnimMontage(AttackAnim);
+
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::SingularityAttack_TimeElapsed, 0.2f);
+}
+
+void ASCharacter::SingularityAttack_TimeElapsed()
+{
+	if (ensure(SingularityClass))
+	{
+		FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+
+		//Trace Object Params
+		FCollisionObjectQueryParams ObjectQueryParams;
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+		FVector TraceEnd = ASCharacter::FindTraceEnd();
+
+
+		FHitResult HitResult;
+		bool bHitResult = GetWorld()->LineTraceSingleByObjectType(HitResult, HandLocation, TraceEnd, ObjectQueryParams);
+		//DrawDebugLine(GetWorld(), HandLocation, TraceEnd, FColor::Yellow, false, 2.0f, 0, 2.0f);
+
+
+		if (bHitResult)
+		{
+			TraceEnd = HitResult.ImpactPoint;
+		}
+
+		FRotator AdjustedRotation = FRotationMatrix::MakeFromX(TraceEnd - HandLocation).Rotator();
+
+		FTransform SpawnTM = FTransform(AdjustedRotation, HandLocation);
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = this;
+
+		GetWorld()->SpawnActor<AActor>(SingularityClass, SpawnTM, SpawnParams);
+	}
+}
+
+
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
 	if (ensure(ProjectileClass))
@@ -147,7 +194,7 @@ void ASCharacter::PrimaryAttack_TimeElapsed()
 
 		FHitResult HitResult;
 		bool bHitResult = GetWorld()->LineTraceSingleByObjectType(HitResult, HandLocation, TraceEnd, ObjectQueryParams);
-		DrawDebugLine(GetWorld(), HandLocation, TraceEnd, FColor::Yellow, false, 2.0f, 0, 2.0f);
+		//DrawDebugLine(GetWorld(), HandLocation, TraceEnd, FColor::Yellow, false, 2.0f, 0, 2.0f);
 
 
 		if(bHitResult)

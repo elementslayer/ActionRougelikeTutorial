@@ -37,7 +37,11 @@ protected:
 	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<AActor> SingularityClass;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
+
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -49,6 +53,8 @@ protected:
 
 	void PrimaryAttack_TimeElapsed();
 	void PrimaryAttack();
+	void SingularityAttack_TimeElapsed();
+	void SingularityAttack();
 	void PrimaryInteract();
 
 

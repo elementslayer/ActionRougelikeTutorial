@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SMagicProjectile.generated.h"
+#include "SMagicProjectileBase.generated.h"
 
 //Forward Declarations
 class USphereComponent;
@@ -12,15 +12,17 @@ class UProjectileMovementComponent;
 class UParticleSystemComponent;
 
 UCLASS()
-class ACTIONROUGELIKE_API ASMagicProjectile : public AActor
+class ACTIONROUGELIKE_API ASMagicProjectileBase : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	ASMagicProjectile();
+	ASMagicProjectileBase();
 
 protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	USphereComponent* SphereComp;
@@ -32,9 +34,6 @@ protected:
 	UParticleSystemComponent* EffectComp;
 
 
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

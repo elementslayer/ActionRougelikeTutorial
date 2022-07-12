@@ -11,6 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 
 
+
 // Sets default values
 ASCharacter::ASCharacter()
 {
@@ -81,6 +82,23 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 }
 
+FVector ASCharacter::FindTraceEnd()
+{
+
+	//Get the correct rotation
+	FRotator CurrentRotation = GetControlRotation();
+	FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+
+	FVector CameraLocation = CameraComp->GetComponentLocation();
+	FVector CameraRotation = CameraComp->GetComponentRotation().Vector();
+
+	FVector TraceEndLocation = CameraLocation + (CameraRotation * 1000.f);
+
+	DrawDebugLine(GetWorld(), HandLocation, TraceEndLocation, FColor::Yellow, false, 2.0f, 0, 2.0f);
+
+	return TraceEndLocation;
+}
+
 void ASCharacter::MoveForward(float Value)
 {
 	FRotator ControlRot = GetControlRotation();
@@ -115,14 +133,38 @@ void ASCharacter::PrimaryAttack()
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
-	FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+	if (ensure(ProjectileClass))
+	{
+		FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
 
-	FTransform SpawnTM = FTransform(GetControlRotation(), HandLocation);
+		//Trace Object Params
+		FCollisionObjectQueryParams ObjectQueryParams;
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FVector TraceEnd = ASCharacter::FindTraceEnd();
 
-	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+
+		FHitResult HitResult;
+		bool bHitResult = GetWorld()->LineTraceSingleByObjectType(HitResult, HandLocation, TraceEnd, ObjectQueryParams);
+		DrawDebugLine(GetWorld(), HandLocation, TraceEnd, FColor::Yellow, false, 2.0f, 0, 2.0f);
+
+
+		if(bHitResult)
+		{
+			TraceEnd = HitResult.ImpactPoint;
+		}
+
+		FRotator AdjustedRotation = FRotationMatrix::MakeFromX(TraceEnd - HandLocation).Rotator();
+
+		FTransform SpawnTM = FTransform(AdjustedRotation, HandLocation);
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = this;
+
+		GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+	}
 }
 
 void ASCharacter::PrimaryInteract()

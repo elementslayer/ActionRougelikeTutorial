@@ -24,10 +24,10 @@ public:
 
 protected:
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	USpringArmComponent* SpringArmComp;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UCameraComponent* CameraComp;
 
 	UPROPERTY(VisibleAnywhere)
@@ -59,5 +59,10 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+private:
+	FVector FindTraceEnd();
+
+
 
 };

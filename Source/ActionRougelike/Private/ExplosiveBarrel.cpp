@@ -3,6 +3,11 @@
 
 #include "ExplosiveBarrel.h"
 
+#include "PhysicsEngine/RadialForceComponent.h"
+#include "Components/StaticMeshComponent.h"
+
+#include "DrawDebugHelpers.h"
+
 // Sets default values
 AExplosiveBarrel::AExplosiveBarrel()
 {
@@ -13,31 +18,37 @@ AExplosiveBarrel::AExplosiveBarrel()
 	MeshComp->SetSimulatePhysics(true);
 	RootComponent = MeshComp;
 
+	ForceComp = CreateDefaultSubobject<URadialForceComponent>("ForceComp");
+	ForceComp->SetupAttachment(MeshComp);
+
+	//Applies small force on via tick component
+	ForceComp->SetAutoActivate(false);
+	ForceComp->Radius = 750.0f;
+	ForceComp->ImpulseStrength  = 2500.0f; // Alternative 200000 if bImpluseVelChage = false
+	//Ignores thje mass of other objects, force and radius much be much higher if this is false
+	ForceComp->bImpulseVelChange = true;
+
+	//Optial, default constructor of component already adds 4 object types to affect, excluding dynamic
+	ForceComp->AddCollisionChannelToAffect((ECC_WorldDynamic));
 }
 
-// Called when the game starts or when spawned
-void AExplosiveBarrel::BeginPlay()
-{
-	Super::BeginPlay();
 
-	//MeshComp->OnComponentHit.AddDynamic(this, &AExplosiveBarrel::OnHit);
-	MeshComp->OnComponentBeginOverlap.AddDynamic(this, &AExplosiveBarrel::OnOverlap);
-	UE_LOG(LogTemp, Display, TEXT("Hi I am here"));
+void AExplosiveBarrel::PostInitializeComponents()
+{
+	//Call tot he parent
+	Super::PostInitializeComponents();
+
+	MeshComp->OnComponentHit.AddDynamic(this, &AExplosiveBarrel::OnActorHit);
 }
 
-
-
-// Called every frame
-void AExplosiveBarrel::Tick(float DeltaTime)
+void AExplosiveBarrel::OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	Super::Tick(DeltaTime);
+	ForceComp->FireImpulse();
+	UE_LOG(LogTemp, Display, TEXT("OnActorHit in ExplosiveBarrel"));
+	UE_LOG(LogTemp, Warning, TEXT("OtherActor %s, at game time %f"), *GetNameSafe(OtherActor), GetWorld()->TimeSeconds);
 
-}
-
-void AExplosiveBarrel::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyInteger, bool FromSweep, const FHitResult& Hit)
-{
-	UE_LOG(LogTemp, Display, TEXT("OnOverlap"));
-	OverlappedComponent->AddRadialImpulse(OverlappedComponent->GetComponentLocation(), 100.0f, 10000.0f, ERadialImpulseFalloff::RIF_Constant, false);
 	
-}
+	FString CombinedString = FString::Printf(TEXT("Hit At Location %s"), *Hit.ImpactPoint.ToString());
+	DrawDebugString(GetWorld(), Hit.ImpactPoint, CombinedString, nullptr, FColor::Green, 2.0f, true);
 
+}

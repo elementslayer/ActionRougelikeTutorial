@@ -7,6 +7,7 @@
 #include "ExplosiveBarrel.generated.h"
 
 class UStaticMeshComponent;
+class URadialForceComponent;
 
 UCLASS()
 class ACTIONROUGELIKE_API AExplosiveBarrel : public AActor
@@ -18,17 +19,18 @@ public:
 	AExplosiveBarrel();
 
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* MeshComp;
 
-	UFUNCTION()
-	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyInteger, bool FromSweep, const FHitResult& Hit);
+	UPROPERTY(VisibleAnywhere)
+	URadialForceComponent* ForceComp;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	virtual void PostInitializeComponents() override;
+
+	//Must be ufunction to bind to the event of on component hit
+	UFUNCTION()
+	void OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
 
 };

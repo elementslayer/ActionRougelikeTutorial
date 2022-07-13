@@ -40,6 +40,9 @@ protected:
 	TSubclassOf<AActor> SingularityClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<AActor> TeleportClass;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
 
 
@@ -55,6 +58,8 @@ protected:
 	void PrimaryAttack();
 	void SingularityAttack_TimeElapsed();
 	void SingularityAttack();
+	void TeleportAttack_TimeElapsed();
+	void TeleportAttack();
 	void PrimaryInteract();
 
 

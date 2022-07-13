@@ -78,6 +78,7 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
 	PlayerInputComponent->BindAction("SingularityAttack", IE_Pressed, this, &ASCharacter::SingularityAttack);
+	PlayerInputComponent->BindAction("TeleportAttack", IE_Pressed, this, &ASCharacter::TeleportAttack);
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
@@ -94,7 +95,7 @@ FVector ASCharacter::FindTraceEnd()
 	FVector CameraLocation = CameraComp->GetComponentLocation();
 	FVector CameraRotation = CameraComp->GetComponentRotation().Vector();
 
-	FVector TraceEndLocation = CameraLocation + (CameraRotation * 1000.f);
+	FVector TraceEndLocation = CameraLocation + (CameraRotation * 2500.0f);
 
 	DrawDebugLine(GetWorld(), HandLocation, TraceEndLocation, FColor::Yellow, false, 2.0f, 0, 2.0f);
 
@@ -139,6 +140,49 @@ void ASCharacter::SingularityAttack()
 	PlayAnimMontage(AttackAnim);
 
 	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::SingularityAttack_TimeElapsed, 0.2f);
+}
+
+void ASCharacter::TeleportAttack()
+{
+	PlayAnimMontage(AttackAnim);
+
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::TeleportAttack_TimeElapsed, 0.2f);
+}
+
+void ASCharacter::TeleportAttack_TimeElapsed()
+{
+	if (ensure(TeleportClass))
+	{
+		FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+
+		//Trace Object Params
+		FCollisionObjectQueryParams ObjectQueryParams;
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+		FVector TraceEnd = ASCharacter::FindTraceEnd();
+
+
+		FHitResult HitResult;
+		bool bHitResult = GetWorld()->LineTraceSingleByObjectType(HitResult, HandLocation, TraceEnd, ObjectQueryParams);
+		//DrawDebugLine(GetWorld(), HandLocation, TraceEnd, FColor::Yellow, false, 2.0f, 0, 2.0f);
+
+
+		if (bHitResult)
+		{
+			TraceEnd = HitResult.ImpactPoint;
+		}
+
+		FRotator AdjustedRotation = FRotationMatrix::MakeFromX(TraceEnd - HandLocation).Rotator();
+
+		FTransform SpawnTM = FTransform(AdjustedRotation, HandLocation);
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = this;
+
+		GetWorld()->SpawnActor<AActor>(TeleportClass, SpawnTM, SpawnParams);
+	}
 }
 
 void ASCharacter::SingularityAttack_TimeElapsed()
